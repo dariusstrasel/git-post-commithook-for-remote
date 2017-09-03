@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Goal: After a commit has been made, take the commit message and/or SHA and add it to a github repository for tracking by date.
+
+REPO_NAME=$(git config --local remote.origin.url|sed -n 's#.*/\([^.]*\)\.git#\1#p')
+REMOTE_URL=$(git config --local remote.origin.url)
+
+DATE_TODAY=$(date +"%Y-%m-%d %H:%M:%S")
+
+GITHUB_USERNAME="dariusstrasel"
+OAUTH_TOKEN="Insert Here"
+
+
+FULL_NAME="John Doe" # $(git config --global user.name)
+EMAIL="doe.john@gmail.com" # $(#git config --global user.email)
+COMMIT=$(git log -1 HEAD --pretty=format:%s)
+CONTENT=$DATE_TODAY
+COMMIT_REPO_NAME="commit-repository"
+BASE_URL="https://api.github.com"
+FULL_URL=$BASE_URL/repos/$GITHUB_USERNAME/$COMMIT_REPO_NAME/contents/
+
+# \''{"message": "'"$COMMIT"'", "committer": { "name": "'"$FULL_NAME"'", "email": "'"$EMAIL"'" }, "content": "'"$CONTENT"'"}'\'
+#JSON=\''{"hostname": "localhost", "outdir": "'"$OUTDIR"'", "port": 20400, "size": 100000}'\'
+JSON=\''{"message": "'"$COMMIT"'", "committer": { "name": "'"$FULL_NAME"'", "email": "'"$EMAIL"'" }, "content": "'"$CONTENT"'"}'\'
+
+remote_is_github () {
+  # Evaluates whether the input argument contains "github.com"
+  #$REMOTE_URL
+  [[ $1 == *"github.com"* ]];
+}
+
+# {
+#  "message": "my commit message",
+#  "committer": {
+#    "name": "Scott Chacon",
+#    "email": "schacon@gmail.com"
+#  },
+#  "content": "bXkgbmV3IGZpbGUgY29udGVudHM="
+#}
+
+base64=`echo "the file contents" | base64`
+
+#base url = https://api.github.com
+#PUT /repos/:owner/:repo/contents/:path
+#githubUsername='dariusstrasel
+
+# -iH 'User-Agent: $(githubUsername)'
+
+curl_ih="-iH 'User-Agent: "''$GITHUB_USERNAME''"'"
+curl_h="-H "'"Authorization: token '$OAUTH_TOKEN' Content-Type: application/json"'""
+
+post_to_github () {
+  # curl --data "key=$API_KEY&highlight_date=$DATE_TODAY&description=$MESSAGE&source=$LABEL" https://www.rescuetime.com/anapi/highlights_post
+  curl $curl_ih $curl_h -X PUT -d $JSON $FULL_URL
+}
+
+main () {
+  remote_is_github $REMOTE_URL && post_to_github || echo "Remote is not GitHub."
+}
+
+main
