@@ -1,1 +1,1 @@
-# bitbucket-commits
+# Git Post CommitHook for remote
